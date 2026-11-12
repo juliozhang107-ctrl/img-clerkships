@@ -294,7 +294,7 @@
   function row(p) {
     var typeLabel = p.type === "hospital" ? "Hospital-based" : "Medical school-based";
     var node = el("article", { class: "row", id: "p-" + p.id }, [
-      el("h3", { text: p.name }),
+      el("h3", null, [el("span", { class: "type-icon " + (p.type === "hospital" ? "hospital" : "school"), "aria-hidden": "true" }), p.name]),
       el("p", { class: "place", text: p.city + ", " + p.state_name + " · " + typeLabel }),
       el("a", { class: "official", href: p.url, target: "_blank", rel: "noopener noreferrer", text: "Official page" })
     ]);
