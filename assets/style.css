@@ -222,3 +222,6 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 @media (min-width: 900px) {
   .type-icon { position: absolute; left: -42px; top: 2px; margin: 0; }
 }
+
+/* No "press Enter" note beside the buttons (the Enter key still works) */
+.hint { display: none; }
