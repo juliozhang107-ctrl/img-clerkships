@@ -33,6 +33,11 @@
     return node;
   }
   function $(id) { return document.getElementById(id); }
+  function svg(tag, attrs) {
+    var node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    return node;
+  }
   function money(v) { return v === null || v === undefined ? null : "$" + Number(v).toLocaleString("en-US"); }
   function monthLabel(ym) {
     var m = /^(\d{4})-(\d{2})/.exec(ym || "");
@@ -450,6 +455,55 @@
     $("count").textContent = rows.length === data.programs.length
       ? "Showing all " + rows.length + " programs"
       : "Showing " + rows.length + " of " + data.programs.length + " programs";
+    paintMap();
+  }
+
+  // ---------- map of the United States ----------
+  var mapData = null, hovered = "";
+  function countIn(code) { return data.programs.filter(function (p) { return p.state === code; }).length; }
+  function buildMap(m) {
+    mapData = m;
+    var root = svg("svg", { viewBox: m.viewBox, role: "img", "aria-label": "Map of the United States. States with programs on the list are shown in white." });
+    var hits = svg("g", {});
+    Object.keys(m.states).forEach(function (code) {
+      var n = countIn(code);
+      root.appendChild(svg("path", { d: m.states[code].d, class: n ? "st has" : "st", "data-code": code }));
+      if (n) hits.appendChild(svg("circle", { cx: m.states[code].c[0], cy: m.states[code].c[1], r: 15, class: "hit", "data-code": code }));
+    });
+    root.appendChild(hits); // larger targets, so small states can be picked too
+    function codeOf(ev) { return (ev.target.getAttribute && ev.target.getAttribute("data-code")) || ""; }
+    root.addEventListener("mouseover", function (ev) { hovered = codeOf(ev); paintMap(); });
+    root.addEventListener("mouseleave", function () { hovered = ""; paintMap(); });
+    root.addEventListener("click", function (ev) {
+      var code = codeOf(ev);
+      if (!code || !countIn(code)) return;
+      pickState($("state").value === code ? "" : code);
+    });
+    $("map").appendChild(root);
+    paintMap();
+  }
+  function pickState(code) {
+    $("state").value = code;
+    render();
+    var box = $("programs").getBoundingClientRect();
+    if (code && (box.top > window.innerHeight * 0.6 || box.bottom < 0)) $("programs").scrollIntoView();
+  }
+  function paintMap() {
+    if (!mapData) return;
+    var chosen = $("state").value, note = $("map-note");
+    Array.prototype.forEach.call($("map").querySelectorAll(".st"), function (node) {
+      node.classList.toggle("sel", node.getAttribute("data-code") === chosen);
+    });
+    var code = hovered || chosen;
+    note.textContent = "";
+    if (!code) { note.textContent = "States in white have programs. Select one to see them."; return; }
+    var n = countIn(code), name = mapData.states[code].n;
+    note.appendChild(document.createTextNode(name + ": " + (n ? n + (n === 1 ? " program" : " programs") : "no program on the list") + (chosen === code ? ", shown in the list. " : ". ")));
+    if (chosen) {
+      var all = el("button", { type: "button", text: "Show all states" });
+      all.addEventListener("click", function () { hovered = ""; pickState(""); });
+      note.appendChild(all);
+    }
   }
   function renderSummary() {
     var ps = data.programs, states = {};
@@ -519,6 +573,7 @@
       var target = document.getElementById(location.hash.slice(1));
       if (target) target.scrollIntoView();
     }
+    getJSON("data/us-map.json").then(buildMap).catch(function () { $("map").parentNode.hidden = true; }); // the page works without the map
     return getJSON("data/changelog.json").then(renderChanges).catch(function () { /* changelog is optional */ });
   }).catch(function () {
     $("count").textContent = "The list could not be loaded. Please refresh the page.";
