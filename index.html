@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>U.S. Clinical Electives for International Medical Students</title>
+<meta name="description" content="U.S. clinical electives and clerkships that international medical students (IMGs) can apply to directly, with requirements, fees and tuition from each program's official page. Readers report changes and the list is reviewed every week.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="welcome">
+  <div class="col">
+    <h1>U.S. clinical electives for international medical students</h1>
+    <p class="intro">Programs where a student from a medical school outside the United States can apply directly, without the school being part of VSLO. Requirements and costs come from each program's official page.</p>
+    <div class="go">
+      <button type="button" class="ok" id="start">See the programs</button>
+      <span class="hint">press <strong>Enter ↵</strong></span>
+    </div>
+    <p class="fine"><span id="summary"></span> Based on <a href="https://doi.org/10.21203/rs.3.rs-11613768/v1" target="_blank" rel="noopener noreferrer">this preprint</a>.</p>
+  </div>
+</header>
+
+<main class="col" id="programs">
+
+  <section aria-labelledby="list-title">
+    <h2 id="list-title">Programs</h2>
+    <p class="lead">Did you check or apply to one of these recently? Tell us if the entry is correct. Every report is compared with the official program page before anything changes.</p>
+
+    <form class="filters" id="filters" onsubmit="return false">
+      <div class="field grow">
+        <label for="q">Search</label>
+        <input type="search" id="q" placeholder="Program, city or state" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="state">State</label>
+        <select id="state"><option value="">All states</option></select>
+      </div>
+      <div class="field">
+        <label for="sort">Sort by</label>
+        <select id="sort">
+          <option value="name">Name</option>
+          <option value="tuition">Tuition, lowest first</option>
+          <option value="fee">Application fee, lowest first</option>
+          <option value="state">State</option>
+        </select>
+      </div>
+      <fieldset class="toggles">
+        <legend>Show only</legend>
+        <label class="chip"><input type="checkbox" id="f-step1"><span>No Step 1 requirement listed</span></label>
+        <label class="chip"><input type="checkbox" id="f-english"><span>No English test listed</span></label>
+        <label class="chip"><input type="checkbox" id="f-tuition"><span>No tuition</span></label>
+      </fieldset>
+    </form>
+    <p class="legend"><strong>Not reported</strong> means the official page does not mention the item. The program may still require it, so confirm with the program before you apply.</p>
+
+    <p class="count" id="count" aria-live="polite"></p>
+    <div id="list" class="list"></div>
+    <p class="empty" id="empty" hidden>No program matches these filters.</p>
+  </section>
+
+  <section id="suggest" class="block" aria-labelledby="suggest-title">
+    <h2 id="suggest-title">Is a program missing?</h2>
+    <p class="lead">If you know a U.S. program that takes direct applications from international medical students and it is not here, send it to us. It takes about a minute.</p>
+    <div class="go">
+      <button type="button" class="ok" id="suggest-open">Suggest a program</button>
+    </div>
+    <p class="msg good" id="suggest-msg" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="block" aria-labelledby="changes-title">
+    <h2 id="changes-title">Recent updates</h2>
+    <ol class="changes" id="changes"></ol>
+  </section>
+
+  <section class="block about" aria-labelledby="about-title">
+    <h2 id="about-title">About this list</h2>
+
+    <h3>What is included</h3>
+    <p>U.S. programs that offer a clinical elective, clerkship or comparable supervised rotation, accept international medical students, and let the student apply directly, whether or not the institution is also on VSLO. Observerships and placements sold through private agencies are not included.</p>
+
+    <h3>Where the data come from</h3>
+    <p>The starting list is the program-level dataset of a systematic environmental scan of 252 U.S. program records (LCME and osteopathic medical schools, the U.S. News Honor Roll hospitals and VSLO resources), searched in March and April 2024 and re-verified in June 2026.</p>
+    <p class="cite">Zhang JMF, Heringer DL, de Oliveira Rodrigues G, Hernandez Oquet RE, Cardoso R, Liu R, Mathur M. Direct-Application Clinical Elective Pathways for International Medical Students in the United States: A Systematic Environmental Scan. Research Square; 2026. Preprint, not yet peer reviewed. <a href="https://doi.org/10.21203/rs.3.rs-11613768/v1" target="_blank" rel="noopener noreferrer">doi:10.21203/rs.3.rs-11613768/v1</a>. Licensed CC BY 4.0.</p>
+
+    <h3>How it stays current</h3>
+    <p>Readers mark entries as correct or not correct and suggest new programs. Once a week the reports are compared with each program's official page. Clear changes are applied and listed under Recent updates. Unclear cases, new programs and removals wait for a decision by the maintainers, and the entry is marked as being re-checked in the meantime.</p>
+
+    <h3>Before you apply</h3>
+    <p>A requirement is shown as “Required” only when the official page documents it. “Not reported” means the page did not state the item, not that the requirement does not exist. Always confirm on the official program page. This is an independent list and is not affiliated with the institutions listed or with the AAMC.</p>
+
+    <h3>Your privacy</h3>
+    <p>Votes are anonymous. If you give an email with a report or suggestion it is used only to follow up on that message and is never published.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="col">
+    <p id="foot-meta"></p>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
