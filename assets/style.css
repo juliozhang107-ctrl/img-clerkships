@@ -338,3 +338,46 @@ h1, main h2, .row h3 { color: var(--warm); }
 @media (forced-colors: active) {
   .st.has:focus-visible { outline-color: Highlight; }
 }
+
+/* Visit statistics: the question at the bottom of the page, and the line in the footer */
+.stats-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #0a2a7a; color: #ffffff;
+  padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 24px;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.25);
+}
+.stats-bar p { margin: 0; font-size: 15px; max-width: 640px; }
+.stats-actions { display: flex; gap: 10px; }
+.stats-bar .ok { font-size: 16px; min-height: 36px; min-width: 64px; }
+body.stats-open { padding-bottom: 120px; }
+.foot button {
+  font: inherit; color: #ffffff; background: none; border: 0; padding: 0; cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--warm); text-decoration-thickness: 2px; text-underline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .stats-bar .ok { min-height: 44px; min-width: 76px; }
+  .foot button { padding: 10px 0; }
+}
+@media (forced-colors: active) {
+  .stats-bar { border-top: 1px solid CanvasText; }
+}
+
+/* Reader reviews of one entry */
+.reviews { margin-top: 26px; }
+.reviews .choice { min-height: 30px; font-size: 15px; padding: 2px 10px; }
+.tags { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.tags li { font-size: 14px; font-weight: 700; color: var(--navy); background: var(--fresh); border-radius: 4px; padding: 3px 9px; }
+.quotes { list-style: none; margin: 0 0 12px; padding: 0; }
+.quotes li { margin: 0 0 8px; padding-left: 12px; border-left: 3px solid var(--warm); overflow-wrap: anywhere; }
+.quotes small { color: var(--muted); font-size: 14px; white-space: nowrap; }
+.reviews .more { font: inherit; font-size: 15px; color: #ffffff; background: none; border: 0; padding: 0; margin: 0 0 12px; display: block; cursor: pointer; text-decoration: underline; text-decoration-color: var(--warm); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+.review-on { font-size: 14px; margin: 0; }
+@media (max-width: 600px) {
+  .reviews .choice { min-height: 38px; padding: 4px 14px; }
+}
+@media (pointer: coarse) {
+  .reviews .choice { min-height: 44px; padding: 4px 14px; }
+  .reviews .more { padding: 10px 0; }
+}
+@media (forced-colors: active) {
+  .tags li { border: 1px solid CanvasText; }
+}

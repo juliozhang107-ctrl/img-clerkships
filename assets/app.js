@@ -4,6 +4,15 @@
   var ENDPOINT = (window.SITE_CONFIG && window.SITE_CONFIG.FEEDBACK_ENDPOINT) || "";
   var STORE_KEY = "clerkship-votes-v1";
   var ALERT_KEY = "clerkship-alerts-v1";
+  var REVIEW_KEY = "clerkship-reviews-v1";
+  var REVIEW_TAGS = [
+    ["letter", "Got a letter of recommendation"],
+    ["visa", "Visa-friendly"],
+    ["cost_ok", "Cost was as listed"],
+    ["cost_more", "Cost was higher than listed"],
+    ["hands_on", "Hands-on with patients"],
+    ["observing", "Mostly observing"]
+  ];
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var LETTERS = "ABCDEFGHIJKLMNOP";
   var REPORT_FIELDS = [
@@ -19,7 +28,9 @@
 
   var data = { meta: {}, programs: [] };
   var votes = loadVotes();
-  var alerts = loadAlerts(); // program ids this reader asked email alerts for
+  var alerts = loadSaved(ALERT_KEY);    // program ids this reader asked email alerts for
+  var reviewed = loadSaved(REVIEW_KEY); // program ids this reader sent a review for
+  var reviews = {};                     // approved reader reviews, by program id
   var lastEmail = "";       // kept for this visit only, to fill in the next sign-up
   var flowOpen = false;
   var pending = {}; // program ids with a "Yes" answer on its way to the inbox
@@ -61,9 +72,9 @@
     votes[id] = { vote: kind, at: d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) }; // the reader's own date
     try { localStorage.setItem(STORE_KEY, JSON.stringify(votes)); } catch (e) { /* private mode: keep in memory only */ }
   }
-  function loadAlerts() {
+  function loadSaved(key) {
     try {
-      var v = JSON.parse(localStorage.getItem(ALERT_KEY));
+      var v = JSON.parse(localStorage.getItem(key));
       return v && typeof v === "object" && !Array.isArray(v) ? v : {};
     } catch (e) { return {}; }
   }
@@ -94,7 +105,8 @@
   }
 
   // ---------- full-screen question flow (one question at a time) ----------
-  // opts: { context, steps: [{ key, type: "multi"|"text"|"long"|"url"|"email", title, desc, required, choices, placeholder }],
+  // opts: { context, steps: [{ key, type: "multi"|"text"|"long"|"url"|"email", title, desc, required, choices, placeholder,
+  //                           max (longest text), check(value) -> problem or "" }],
   //         values (answers to start with), onSubmit(values) -> Promise, doneTitle, doneText, onDone(), opener }
   function openFlow(opts) {
     var steps = opts.steps, values = opts.values || {}, index = 0, finished = false, sending = false, closed = false, notified = false, current = null;
@@ -133,6 +145,7 @@
     function validate(step, value) {
       if (step.type === "multi") return step.required && !value.length ? "Please choose at least one." : "";
       if (!value) return step.required ? "Please fill this in." : "";
+      if (step.check && step.check(value)) return step.check(value);
       if (step.type === "url" && !/^https?:\/\/\S+\.\S+$/i.test(value)) return "That link does not look right. It should start with https:// and have no spaces.";
       if (step.type === "email" && !/^\S+@\S+\.\S+$/.test(value)) return "That email does not look right.";
       return "";
@@ -169,7 +182,7 @@
         current = { letters: toggle, count: buttons.length };
       } else {
         var input = step.type === "long"
-          ? el("textarea", { class: "q-input", rows: "1", maxlength: "2000", placeholder: step.placeholder || "Type your answer here...", "aria-label": step.title })
+          ? el("textarea", { class: "q-input", rows: "1", maxlength: String(step.max || 2000), placeholder: step.placeholder || "Type your answer here...", "aria-label": step.title })
           : el("input", { class: "q-input", type: step.type === "text" ? "text" : step.type, maxlength: step.type === "text" ? "200" : "500", placeholder: step.placeholder || "Type your answer here...", "aria-label": step.title, autocomplete: step.type === "email" ? "email" : "off" });
         input.value = values[step.key] || "";
         input.addEventListener("input", function () {
@@ -288,7 +301,8 @@
         EMAIL_STEP
       ],
       onSubmit: function (v) {
-        return send({ type: "report", program_id: p.id, program_name: p.name, fields: v.fields, details: v.details, source_url: v.source_url, contact: v.contact, website: v.website });
+        return send({ type: "report", program_id: p.id, program_name: p.name, fields: v.fields, details: v.details, source_url: v.source_url, contact: v.contact, website: v.website })
+          .then(function (r) { track("entry_vote", { program_id: p.id, answer: "no" }); return r; });
       },
       doneTitle: "Thank you.",
       doneText: "Your report was recorded. It will be compared with the official program page.",
@@ -308,7 +322,8 @@
         EMAIL_STEP
       ],
       onSubmit: function (v) {
-        return send({ type: "suggest", program_name: v.program_name, place: v.place, source_url: v.source_url, details: v.details, contact: v.contact, website: v.website });
+        return send({ type: "suggest", program_name: v.program_name, place: v.place, source_url: v.source_url, details: v.details, contact: v.contact, website: v.website })
+          .then(function (r) { track("suggest_sent"); return r; });
       },
       doneTitle: "Thank you.",
       doneText: "Your suggestion was recorded. It will be checked against the official program page.",
@@ -326,7 +341,11 @@
         { key: "contact", type: "email", required: true, title: "Your email", desc: "We will email you when this entry changes or applications open. It is free. Your email is used only for these alerts and is never published.", placeholder: "name@example.com" }
       ],
       onSubmit: function (v) {
-        return send({ type: "alert", program_id: p.id, program_name: p.name, contact: v.contact, website: v.website }).then(function (r) { lastEmail = v.contact; return r; });
+        return send({ type: "alert", program_id: p.id, program_name: p.name, contact: v.contact, website: v.website }).then(function (r) {
+          lastEmail = v.contact;
+          track("generate_lead", { lead_source: "email_alert", program_id: p.id }); // the program only, never the email
+          return r;
+        });
       },
       doneTitle: "You are on the list.",
       doneText: "We will email you when the entry for " + p.name + " changes or applications open.",
@@ -342,6 +361,7 @@
     var label = "Email me when this entry changes or applications open";
     var btn = el("button", { type: "button", class: "choice", "aria-label": label + ": " + p.name, text: label });
     btn.addEventListener("click", function () {
+      track("alert_open", { program_id: p.id });
       alertFlow(p, btn, function () {
         alerts[p.id] = true;
         try { localStorage.setItem(ALERT_KEY, JSON.stringify(alerts)); } catch (e) { /* private mode: keep in memory only */ }
@@ -354,6 +374,96 @@
     });
     box.appendChild(btn);
     return box;
+  }
+
+  // ---------- reader reviews of one entry ----------
+  function reviewFlow(p, opener, onDone) {
+    openFlow({
+      context: p.name,
+      opener: opener,
+      steps: [
+        { key: "tags", type: "multi", title: "How was your rotation there?", choices: REVIEW_TAGS },
+        { key: "year", type: "text", title: "In which year did you rotate there?", desc: "Optional.", placeholder: "2025",
+          check: function (v) { return /^(19|20)\d{2}$/.test(v) && Number(v) <= new Date().getFullYear() ? "" : "Please type the year with four digits, for example 2025."; } },
+        { key: "comment", type: "long", max: 280, title: "Anything future applicants should know?", desc: "Optional, up to 280 characters. Please do not name people or give contact details." }
+      ],
+      onSubmit: function (v) {
+        if (!v.tags.length && !v.comment) return Promise.reject(new Error("Please choose at least one item in the first question or write a comment."));
+        return send({ type: "review", program_id: p.id, program_name: p.name, tags: v.tags, year: v.year, comment: v.comment, website: v.website })
+          .then(function (r) { track("review_sent", { program_id: p.id }); return r; });
+      },
+      doneTitle: "Thank you.",
+      doneText: "Your review was recorded. It will appear on the page after it is checked.",
+      onDone: onDone
+    });
+  }
+  function reviewBar(p) {
+    var list = reviews[p.id] || [], withText = list.filter(function (r) { return r.comment; });
+    var box = el("div", { class: "reviews" }, [
+      el("p", { class: "ask", text: list.length ? "Reader reviews (" + list.length + ")" : "Reader reviews: none yet" })
+    ]);
+    if (list.length) {
+      var counts = {}, tags = el("ul", { class: "tags" });
+      list.forEach(function (r) { r.tags.forEach(function (t) { counts[t] = (counts[t] || 0) + 1; }); });
+      REVIEW_TAGS.forEach(function (t) { if (counts[t[0]]) tags.appendChild(el("li", { text: t[1] + " · " + counts[t[0]] })); });
+      if (tags.firstChild) box.appendChild(tags);
+    }
+    if (withText.length) {
+      var quotes = el("ul", { class: "quotes" });
+      var add = function (r) {
+        quotes.appendChild(el("li", null, [el("span", { text: "“" + r.comment + "”" }), r.year ? el("small", { text: " Rotation in " + r.year }) : null]));
+      };
+      withText.slice(0, 3).forEach(add);
+      box.appendChild(quotes);
+      if (withText.length > 3) {
+        var more = el("button", { type: "button", class: "more", text: "Show all " + withText.length + " comments" });
+        more.addEventListener("click", function () { withText.slice(3).forEach(add); more.remove(); });
+        box.appendChild(more);
+      }
+    }
+    if (reviewed[p.id]) {
+      box.appendChild(el("p", { class: "review-on", role: "status", tabindex: "-1", text: "Thank you. Your review is waiting to be checked." }));
+      return box;
+    }
+    var label = "Write a short review";
+    var btn = el("button", { type: "button", class: "choice", "aria-label": label + ": " + p.name, text: label });
+    btn.addEventListener("click", function () {
+      track("review_open", { program_id: p.id });
+      reviewFlow(p, btn, function () {
+        reviewed[p.id] = true;
+        try { localStorage.setItem(REVIEW_KEY, JSON.stringify(reviewed)); } catch (e) { /* private mode: keep in memory only */ }
+        var fresh = redrawReviews(p);
+        if (fresh) fresh.lastChild.focus({ preventScroll: true });
+      });
+    });
+    box.appendChild(btn);
+    return box;
+  }
+  function redrawReviews(p) {
+    var node = document.getElementById("p-" + p.id), old = node && node.querySelector(".reviews");
+    if (!old) return null;
+    var fresh = reviewBar(p);
+    node.replaceChild(fresh, old);
+    return fresh;
+  }
+  // Approved reviews come from the feedback inbox. Without them the page still works.
+  function loadReviews() {
+    if (!ENDPOINT) return;
+    fetch(ENDPOINT + "?reviews=1").then(function (r) { return r.json(); }).then(function (body) {
+      if (!body || body.ok !== true || !Array.isArray(body.reviews)) return;
+      var known = {}, byId = {};
+      REVIEW_TAGS.forEach(function (t) { known[t[0]] = true; });
+      body.reviews.forEach(function (r) {
+        if (!r || typeof r.program_id !== "string") return;
+        (byId[r.program_id] = byId[r.program_id] || []).push({
+          tags: (Array.isArray(r.tags) ? r.tags : []).filter(function (t) { return known[t] === true; }),
+          year: /^(19|20)\d{2}$/.test(String(r.year)) ? String(r.year) : "",
+          comment: typeof r.comment === "string" ? r.comment.trim().slice(0, 280) : ""
+        });
+      });
+      reviews = byId;
+      data.programs.forEach(redrawReviews);
+    }).catch(function () { /* reviews are optional */ });
   }
 
   // ---------- program row ----------
@@ -392,6 +502,7 @@
       moneyFact("Tuition, 4 weeks", p.tuition_4wk_usd),
       fact("Also on VSLO", p.vslo ? "Yes" : "No", "")
     ]));
+    node.appendChild(reviewBar(p));
     node.appendChild(voteBar(p));
     node.appendChild(alertBar(p));
     return node;
@@ -445,6 +556,7 @@
       send({ type: "confirm", program_id: p.id, program_name: p.name }).then(function () {
         delete pending[p.id];
         saveVote(p.id, "confirm");
+        track("entry_vote", { program_id: p.id, answer: "yes" });
         redrawVote(p, "Thank you. Your confirmation was recorded.", false);
       }).catch(function (err) {
         delete pending[p.id];
@@ -531,6 +643,7 @@
     function choose(code) {
       if (!code || !countIn(code)) return false;
       pickState($("state").value === code ? "" : code);
+      track("state_select", { state: $("state").value || "all", method: "map" });
       return true;
     }
     root.addEventListener("click", function (ev) { choose(codeOf(ev)); });
@@ -607,6 +720,82 @@
     });
   }
 
+  // ---------- visit statistics (Google Analytics, only after the reader agrees) ----------
+  var GA_ID = (window.SITE_CONFIG && window.SITE_CONFIG.GA_MEASUREMENT_ID) || "";
+  var STATS_KEY = "clerkship-stats-v1";
+  var statsOn = false, statsLoaded = false, statsChoice = null;
+  function gtag() { window.dataLayer.push(arguments); }
+  // Records what was used on the page. Never called with an email or any free text from the forms.
+  function track(name, params) {
+    if (statsOn) gtag("event", name, params || {});
+  }
+  function startStats() {
+    if (!GA_ID || statsOn) return;
+    statsOn = true;
+    window["ga-disable-" + GA_ID] = false;
+    if (statsLoaded) return;
+    statsLoaded = true;
+    window.dataLayer = window.dataLayer || [];
+    gtag("consent", "default", { analytics_storage: "granted", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+    gtag("js", new Date());
+    gtag("config", GA_ID, { allow_google_signals: false, allow_ad_personalization_signals: false });
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(GA_ID);
+    document.head.appendChild(s);
+  }
+  function stopStats() {
+    statsOn = false;
+    window["ga-disable-" + GA_ID] = true; // Google's own switch: nothing more is sent
+    document.cookie.split(";").forEach(function (c) { // remove the cookies it set
+      var name = c.split("=")[0].trim();
+      if (name.indexOf("_ga") !== 0) return;
+      document.cookie = name + "=; Max-Age=0; path=/";
+      document.cookie = name + "=; Max-Age=0; path=/; domain=" + location.hostname;
+    });
+  }
+  function paintStatsLine() {
+    var line = $("foot-stats");
+    if (!line) return;
+    line.firstChild.textContent = "Visit statistics: " + (statsChoice === "yes" ? "on" : "off") + ". ";
+  }
+  function statsBar() {
+    var open = $("stats-bar");
+    if (open) { open.querySelector("button").focus(); return; }
+    var yes = el("button", { type: "button", class: "ok", text: "Yes" });
+    var no = el("button", { type: "button", class: "ok", text: "No" });
+    var bar = el("div", { class: "stats-bar", id: "stats-bar", role: "region", "aria-label": "Visit statistics" }, [
+      el("p", { text: "Can this page count your visit with Google Analytics? It uses cookies and shows us which programs readers look at. No advertising." }),
+      el("div", { class: "stats-actions" }, [yes, no])
+    ]);
+    function answer(v) {
+      statsChoice = v;
+      try { localStorage.setItem(STATS_KEY, v); } catch (e) { /* private mode: the choice lasts for this visit */ }
+      bar.remove();
+      document.body.classList.remove("stats-open");
+      if (v === "yes") startStats(); else stopStats();
+      paintStatsLine();
+    }
+    yes.addEventListener("click", function () { answer("yes"); });
+    no.addEventListener("click", function () { answer("no"); });
+    document.body.appendChild(bar);
+    document.body.classList.add("stats-open");
+  }
+  function setUpStats() {
+    if (!GA_ID) return;
+    try { statsChoice = localStorage.getItem(STATS_KEY); } catch (e) { statsChoice = null; }
+    if (statsChoice !== "yes" && statsChoice !== "no") statsChoice = null;
+    var change = el("button", { type: "button", text: "Change" });
+    change.addEventListener("click", function () { statsBar(); $("stats-bar").querySelector("button").focus(); });
+    $("foot-meta").parentNode.appendChild(el("p", { id: "foot-stats" }, [el("span"), change]));
+    $("privacy-stats").hidden = false;
+    paintStatsLine();
+    // a browser set to "do not track" is taken as a No, without asking
+    var optedOut = navigator.globalPrivacyControl === true || navigator.doNotTrack === "1";
+    if (statsChoice === "yes") startStats();
+    else if (statsChoice === null && !optedOut) statsBar();
+  }
+
   // ---------- start ----------
   function getJSON(path) {
     return fetch(path, { cache: "no-cache" }).then(function (r) {
@@ -623,7 +812,27 @@
     $(id).addEventListener(id === "q" ? "input" : "change", render);
   });
   $("start").addEventListener("click", toPrograms);
-  $("suggest-open").addEventListener("click", function () { $("suggest-msg").textContent = ""; suggestFlow($("suggest-open")); });
+  $("suggest-open").addEventListener("click", function () { $("suggest-msg").textContent = ""; track("suggest_open"); suggestFlow($("suggest-open")); });
+
+  // what is counted when the reader agreed to visit statistics
+  var searchTimer = null;
+  $("q").addEventListener("input", function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () {
+      var term = $("q").value.trim().slice(0, 60);
+      if (term) track("search", { search_term: term, results: $("list").children.length });
+    }, 1500);
+  });
+  $("state").addEventListener("change", function () { track("state_select", { state: $("state").value || "all", method: "list" }); });
+  $("sort").addEventListener("change", function () { track("sort_use", { sort: $("sort").value }); });
+  ["f-step1", "f-english", "f-tuition"].forEach(function (id) {
+    $(id).addEventListener("change", function () { track("filter_use", { filter: id.slice(2), on: $(id).checked ? "yes" : "no" }); });
+  });
+  $("start").addEventListener("click", function () { track("see_programs_click"); });
+  $("list").addEventListener("click", function (ev) {
+    var link = ev.target.closest && ev.target.closest("a.official");
+    if (link) track("official_page_click", { program_id: link.closest(".row").id.slice(2) });
+  });
   // On the welcome screen, Enter moves on to the list
   document.addEventListener("keydown", function (ev) {
     if (ev.key !== "Enter" || flowOpen || window.scrollY > 80) return;
@@ -632,6 +841,7 @@
   });
 
   if (history.state && history.state.flow) history.replaceState(null, ""); // left over from a reload inside a flow
+  setUpStats();
 
   getJSON("data/programs.json").then(function (d) {
     data = d;
@@ -641,6 +851,7 @@
       var target = document.getElementById(location.hash.slice(1));
       if (target) target.scrollIntoView();
     }
+    loadReviews();
     getJSON("data/us-map.json").then(buildMap).catch(function () { $("map").parentNode.hidden = true; }); // the page works without the map
     return getJSON("data/changelog.json").then(renderChanges).catch(function () { /* changelog is optional */ });
   }).catch(function () {

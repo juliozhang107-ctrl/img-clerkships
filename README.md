@@ -26,7 +26,8 @@ Weekly check (procedure in WEEKLY_CHECK.md)
 | `index.html`, `assets/` | The page |
 | `data/programs.json` | The list. This is the single source of truth for what the page shows |
 | `data/changelog.json` | The "Recent updates" section |
-| `config.js` | One setting: the address of the feedback inbox |
+| `data/us-map.json` | Outlines of the states for the map (public U.S. Census shapes) |
+| `config.js` | Two settings: the address of the feedback inbox and the Google Analytics ID (empty switches visit statistics off) |
 | `apps-script/Code.gs` | The small script that receives feedback into the Google Sheet |
 | `WEEKLY_CHECK.md` | The procedure for the weekly check |
 | `tools/validate_data.py` | Safety check run before any data change is published |

@@ -5,6 +5,8 @@
  * sent by the website and writes one row per message into the "Feedback" tab
  * of the Google Sheet this script is attached to. Requests for email alerts
  * about an entry go to a separate "Alerts" tab, one row per email and program.
+ * Reader reviews go to a "Reviews" tab. A review is shown on the website only
+ * after its status cell is changed to "approved".
  *
  * Setup (once): see README.md, section "Connect the feedback inbox".
  *
@@ -19,7 +21,10 @@ var HEADERS = [
 ];
 var ALERT_SHEET = 'Alerts';
 var ALERT_HEADERS = ['received_at', 'email', 'program_id', 'program_name', 'data_version', 'status', 'notes'];
-var TYPES = ['confirm', 'report', 'suggest', 'alert'];
+var REVIEW_SHEET = 'Reviews';
+var REVIEW_HEADERS = ['received_at', 'program_id', 'program_name', 'tags', 'year', 'comment', 'data_version', 'status', 'notes'];
+var REVIEW_TAGS = ['letter', 'visa', 'cost_ok', 'cost_more', 'hands_on', 'observing'];
+var TYPES = ['confirm', 'report', 'suggest', 'alert', 'review'];
 var MAX_PER_DAY = 400; // stops a flood from filling the sheet
 
 function doPost(e) {
@@ -37,10 +42,31 @@ function doPost(e) {
       return reply({ ok: false, error: 'A program name and a link are required.' });
     }
     if (data.type === 'alert' && !isEmail(data.contact)) return reply({ ok: false, error: 'That email does not look right.' });
+    var tags = [], comment = '';
+    if (data.type === 'review') {
+      (Array.isArray(data.tags) ? data.tags : []).forEach(function (t) {
+        if (REVIEW_TAGS.indexOf(t) > -1 && tags.indexOf(t) === -1) tags.push(t);
+      });
+      comment = clean(data.comment, 280);
+      if (!tags.length && !comment) return reply({ ok: false, error: 'Please choose at least one item or write a comment.' });
+    }
     if (overDailyLimit()) return reply({ ok: false, error: 'Too many messages today. Please try again tomorrow.' });
 
     if (data.type === 'alert') {
       saveAlert(data);
+      return reply({ ok: true });
+    }
+    if (data.type === 'review') {
+      tab(REVIEW_SHEET, REVIEW_HEADERS).appendRow([
+        new Date(),
+        clean(data.program_id, 120),
+        clean(data.program_name, 200),
+        tags.join(', '),
+        /^(19|20)\d{2}$/.test(String(data.year)) ? String(data.year) : '',
+        comment,
+        clean(data.data_version, 20),
+        'new', ''
+      ]);
       return reply({ ok: true });
     }
 
@@ -67,8 +93,35 @@ function doPost(e) {
 }
 
 // Opening the web app address in a browser shows that the inbox is alive.
-function doGet() {
+// With ?reviews=1 it gives the website the approved reader reviews.
+function doGet(e) {
+  if (e && e.parameter && e.parameter.reviews) return reply({ ok: true, reviews: approvedReviews() });
   return reply({ ok: true, service: 'clerkship-feedback' });
+}
+
+// Only rows whose status is "approved", newest first, and only the fields the page shows.
+// The answer is kept for five minutes, so an approval can take that long to appear.
+function approvedReviews() {
+  var cache = CacheService.getScriptCache();
+  var kept = cache.get('reviews');
+  if (kept) return JSON.parse(kept);
+  var out = [];
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(REVIEW_SHEET);
+  if (sh && sh.getLastRow() > 1) {
+    var rows = sh.getRange(2, 1, sh.getLastRow() - 1, REVIEW_HEADERS.length).getValues();
+    for (var i = rows.length - 1; i >= 0 && out.length < 300; i--) {
+      var r = rows[i];
+      if (String(r[7]).trim().toLowerCase() !== 'approved') continue;
+      out.push({
+        program_id: String(r[1]),
+        tags: String(r[3]).split(',').map(function (t) { return t.trim(); }).filter(function (t) { return REVIEW_TAGS.indexOf(t) > -1; }),
+        year: /^(19|20)\d{2}$/.test(String(r[4])) ? String(r[4]) : '',
+        comment: String(r[5]).replace(/^'/, '').slice(0, 280)
+      });
+    }
+  }
+  try { cache.put('reviews', JSON.stringify(out), 300); } catch (ignore) {}
+  return out;
 }
 
 function sheet() {
