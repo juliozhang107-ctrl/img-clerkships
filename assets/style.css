@@ -216,3 +216,11 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 
 /* No "press Enter" note beside the buttons (the Enter key still works) */
 .hint { display: none; }
+
+/* "Is a program missing?" sits between the welcome text and the list */
+.welcome { min-height: 0; padding: 96px 0 56px; }
+#suggest { margin-top: 0; }
+#programs { margin-top: 72px; scroll-margin-top: 24px; }
+@media (max-width: 600px) {
+  .welcome { padding: 56px 0 40px; }
+}

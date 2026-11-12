@@ -22,9 +22,18 @@
   </div>
 </header>
 
-<main class="col" id="programs">
+<main class="col">
 
-  <section aria-labelledby="list-title">
+  <section id="suggest" class="block" aria-labelledby="suggest-title">
+    <h2 id="suggest-title">Is a program missing?</h2>
+    <p class="lead">If you know a U.S. program that takes direct applications from international medical students and it is not here, send it to us. It takes about a minute.</p>
+    <div class="go">
+      <button type="button" class="ok" id="suggest-open">Suggest a program</button>
+    </div>
+    <p class="msg good" id="suggest-msg" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="programs" class="block" aria-labelledby="list-title">
     <h2 id="list-title">Programs</h2>
     <p class="lead">Did you check or apply to one of these recently? Tell us if the entry is correct. Every report is compared with the official program page before anything changes.</p>
 
@@ -58,15 +67,6 @@
     <p class="count" id="count" aria-live="polite"></p>
     <div id="list" class="list"></div>
     <p class="empty" id="empty" hidden>No program matches these filters.</p>
-  </section>
-
-  <section id="suggest" class="block" aria-labelledby="suggest-title">
-    <h2 id="suggest-title">Is a program missing?</h2>
-    <p class="lead">If you know a U.S. program that takes direct applications from international medical students and it is not here, send it to us. It takes about a minute.</p>
-    <div class="go">
-      <button type="button" class="ok" id="suggest-open">Suggest a program</button>
-    </div>
-    <p class="msg good" id="suggest-msg" role="status" aria-live="polite"></p>
   </section>
 
   <section class="block" aria-labelledby="changes-title">
