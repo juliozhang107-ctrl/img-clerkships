@@ -214,14 +214,5 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 .filters select option { color: #111111; background: #ffffff; }
 .msg.err:not(:empty) { display: inline-block; background: #ffffff; color: var(--error); border-radius: 3px; padding: 4px 12px; }
 
-/* Icon before each name: hospital-based or medical school-based */
-.row h3 { position: relative; }
-.type-icon { display: inline-block; width: 26px; height: 26px; margin-right: 10px; vertical-align: -4px; background: center / contain no-repeat; }
-.type-icon.hospital { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 21V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v15'/%3E%3Cpath d='M2 21h20'/%3E%3Cpath d='M12 8v6M9 11h6'/%3E%3Cpath d='M10 21v-4h4v4'/%3E%3C/svg%3E"); }
-.type-icon.school { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 9l10-5 10 5-10 5-10-5z'/%3E%3Cpath d='M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5'/%3E%3Cpath d='M22 9v6'/%3E%3C/svg%3E"); }
-@media (min-width: 900px) {
-  .type-icon { position: absolute; left: -42px; top: 2px; margin: 0; }
-}
-
 /* No "press Enter" note beside the buttons (the Enter key still works) */
 .hint { display: none; }
