@@ -316,3 +316,6 @@ a { text-decoration-color: var(--warm); text-decoration-thickness: 2px; }
 @media (forced-colors: active) {
   .facts dd.req::before, .facts dd.free::before, .flag::before { background: CanvasText; }
 }
+
+/* Titles in the accent colour */
+h1, main h2, .row h3 { color: var(--warm); }
