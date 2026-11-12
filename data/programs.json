@@ -245,7 +245,7 @@
       "city": "Palo Alto",
       "state": "CA",
       "state_name": "California",
-      "url": "https://med.stanford.edu/clerkships/international/ivs-how-to-apply.html",
+      "url": "https://med.stanford.edu/visiting-clerkships/international/ivs-how-to-apply.html",
       "vslo": true,
       "step1": "not_reported",
       "step2": "not_reported",
@@ -360,18 +360,18 @@
       "city": "Pittsburgh",
       "state": "PA",
       "state_name": "Pennsylvania",
-      "url": "https://live-researchprograms-medschool-pitt.pantheonsite.io/international-visiting-student-program",
+      "url": "https://www.researchprograms.medschool.pitt.edu/international-visiting-student-program",
       "vslo": true,
       "step1": "not_reported",
-      "step2": "not_reported",
+      "step2": "required",
       "english_test": {
         "status": "required",
-        "detail": "100"
+        "detail": "106"
       },
       "life_support": "not_reported",
       "application_fee_usd": 0,
       "tuition_4wk_usd": 4500,
-      "notes": null,
+      "notes": "USMLE Step 2 is required for psychiatry electives only. The program suggests sending the score for other electives too.",
       "verified": "2026-06",
       "review": null,
       "confirmations": 0

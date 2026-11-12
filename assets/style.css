@@ -330,3 +330,11 @@ h1, main h2, .row h3 { color: var(--warm); }
 @media (pointer: coarse) {
   .alert .choice { min-height: 44px; padding: 4px 14px; }
 }
+
+/* Map states can be reached and selected with the keyboard */
+.st.has:focus { outline: none; }
+.st.has:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; stroke: #0a2390; stroke-width: 4; }
+.map-note button[hidden] { display: none; }
+@media (forced-colors: active) {
+  .st.has:focus-visible { outline-color: Highlight; }
+}

@@ -513,23 +513,44 @@
   function countIn(code) { return data.programs.filter(function (p) { return p.state === code; }).length; }
   function buildMap(m) {
     mapData = m;
-    var root = svg("svg", { viewBox: m.viewBox, role: "img", "aria-label": "Map of the United States. States with programs on the list are shown in white." });
-    var hits = svg("g", {});
+    var root = svg("svg", { viewBox: m.viewBox, role: "group", "aria-label": "Map of the United States. States with programs on the list can be selected to filter the list." });
+    var hits = svg("g", { "aria-hidden": "true" });
     Object.keys(m.states).forEach(function (code) {
-      var n = countIn(code);
-      root.appendChild(svg("path", { d: m.states[code].d, class: n ? "st has" : "st", "data-code": code }));
+      var n = countIn(code), attrs = { d: m.states[code].d, class: n ? "st has" : "st", "data-code": code };
+      if (n) { // a state with programs works like a button, also from the keyboard
+        attrs.tabindex = "0"; attrs.role = "button"; attrs["aria-pressed"] = "false";
+        attrs["aria-label"] = m.states[code].n + ": " + n + (n === 1 ? " program" : " programs");
+      } else attrs["aria-hidden"] = "true";
+      root.appendChild(svg("path", attrs));
       if (n) hits.appendChild(svg("circle", { cx: m.states[code].c[0], cy: m.states[code].c[1], r: 15, class: "hit", "data-code": code }));
     });
     root.appendChild(hits); // larger targets, so small states can be picked too
     function codeOf(ev) { return (ev.target.getAttribute && ev.target.getAttribute("data-code")) || ""; }
     root.addEventListener("mouseover", function (ev) { hovered = codeOf(ev); paintMap(); });
     root.addEventListener("mouseleave", function () { hovered = ""; paintMap(); });
-    root.addEventListener("click", function (ev) {
-      var code = codeOf(ev);
-      if (!code || !countIn(code)) return;
+    function choose(code) {
+      if (!code || !countIn(code)) return false;
       pickState($("state").value === code ? "" : code);
+      return true;
+    }
+    root.addEventListener("click", function (ev) { choose(codeOf(ev)); });
+    root.addEventListener("focusin", function (ev) { hovered = codeOf(ev); paintMap(); });
+    root.addEventListener("focusout", function () { hovered = ""; paintMap(); });
+    root.addEventListener("keydown", function (ev) {
+      if ((ev.key === "Enter" || ev.key === " ") && choose(codeOf(ev))) ev.preventDefault();
     });
     $("map").appendChild(root);
+    // the caption: a line of text and a button that is shown only while a state is selected
+    var note = $("map-note"), all = el("button", { type: "button", text: "Show all states", hidden: "" });
+    all.addEventListener("click", function () {
+      var was = $("state").value;
+      hovered = ""; pickState("");
+      var node = was && root.querySelector('.st[data-code="' + was + '"]');
+      if (node) node.focus(); // keep the keyboard user on the map
+    });
+    note.textContent = "";
+    note.appendChild(el("span"));
+    note.appendChild(all);
     paintMap();
   }
   function pickState(code) {
@@ -540,20 +561,17 @@
   }
   function paintMap() {
     if (!mapData) return;
-    var chosen = $("state").value, note = $("map-note");
+    var chosen = $("state").value, note = $("map-note"), text = note.firstChild, all = note.lastChild;
     Array.prototype.forEach.call($("map").querySelectorAll(".st"), function (node) {
-      node.classList.toggle("sel", node.getAttribute("data-code") === chosen);
+      var on = node.getAttribute("data-code") === chosen;
+      node.classList.toggle("sel", on);
+      if (node.hasAttribute("aria-pressed")) node.setAttribute("aria-pressed", on ? "true" : "false");
     });
     var code = hovered || chosen;
-    note.textContent = "";
-    if (!code) { note.textContent = "States in white have programs. Select one to see them."; return; }
+    all.hidden = !chosen;
+    if (!code) { text.textContent = "States in white have programs. Select one to see them."; return; }
     var n = countIn(code), name = mapData.states[code].n;
-    note.appendChild(document.createTextNode(name + ": " + (n ? n + (n === 1 ? " program" : " programs") : "no program on the list") + (chosen === code ? ", shown in the list. " : ". ")));
-    if (chosen) {
-      var all = el("button", { type: "button", text: "Show all states" });
-      all.addEventListener("click", function () { hovered = ""; pickState(""); });
-      note.appendChild(all);
-    }
+    text.textContent = name + ": " + (n ? n + (n === 1 ? " program" : " programs") : "no program on the list") + (chosen === code ? ", shown in the list. " : ". ");
   }
   function renderSummary() {
     var ps = data.programs, states = {};

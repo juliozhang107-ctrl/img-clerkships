@@ -1,6 +1,18 @@
 [
   {
     "date": "2026-11-12",
+    "program_id": "university-of-pittsburgh-school-of-medicine",
+    "summary": "The TOEFL minimum is now 106 (it was 100). USMLE Step 2 is now listed as required, for psychiatry electives only. The link now goes to the program page on the university's own website.",
+    "source_url": "https://www.researchprograms.medschool.pitt.edu/international-visiting-student-program"
+  },
+  {
+    "date": "2026-11-12",
+    "program_id": "stanford-university-school-of-medicine",
+    "summary": "The link to the official page was updated to the program's current address.",
+    "source_url": "https://med.stanford.edu/visiting-clerkships/international/ivs-how-to-apply.html"
+  },
+  {
+    "date": "2026-11-12",
     "program_id": null,
     "summary": "List published with the 19 programs of the preprint's Supplemental Table S1. Every entry was last checked against its official program page in June 2026.",
     "source_url": "https://doi.org/10.21203/rs.3.rs-11613768/v1"
