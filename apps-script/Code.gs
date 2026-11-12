@@ -3,7 +3,8 @@
  *
  * Receives the "correct / not correct" votes and the new-program suggestions
  * sent by the website and writes one row per message into the "Feedback" tab
- * of the Google Sheet this script is attached to.
+ * of the Google Sheet this script is attached to. Requests for email alerts
+ * about an entry go to a separate "Alerts" tab, one row per email and program.
  *
  * Setup (once): see README.md, section "Connect the feedback inbox".
  *
@@ -16,7 +17,9 @@ var HEADERS = [
   'received_at', 'type', 'program_id', 'program_name', 'fields', 'details',
   'source_url', 'place', 'contact', 'data_version', 'status', 'review_notes', 'handled_at'
 ];
-var TYPES = ['confirm', 'report', 'suggest'];
+var ALERT_SHEET = 'Alerts';
+var ALERT_HEADERS = ['received_at', 'email', 'program_id', 'program_name', 'data_version', 'status', 'notes'];
+var TYPES = ['confirm', 'report', 'suggest', 'alert'];
 var MAX_PER_DAY = 400; // stops a flood from filling the sheet
 
 function doPost(e) {
@@ -33,7 +36,13 @@ function doPost(e) {
     if (data.type === 'suggest' && (!clean(data.program_name, 200) || !isUrl(data.source_url))) {
       return reply({ ok: false, error: 'A program name and a link are required.' });
     }
+    if (data.type === 'alert' && !isEmail(data.contact)) return reply({ ok: false, error: 'That email does not look right.' });
     if (overDailyLimit()) return reply({ ok: false, error: 'Too many messages today. Please try again tomorrow.' });
+
+    if (data.type === 'alert') {
+      saveAlert(data);
+      return reply({ ok: true });
+    }
 
     var fields = Array.isArray(data.fields) ? data.fields.slice(0, 10).join(', ') : '';
     sheet().appendRow([
@@ -63,13 +72,32 @@ function doGet() {
 }
 
 function sheet() {
+  return tab(SHEET_NAME, HEADERS);
+}
+
+function tab(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
   if (sh.getLastRow() === 0) {
-    sh.appendRow(HEADERS);
+    sh.appendRow(headers);
     sh.setFrozenRows(1);
   }
   return sh;
+}
+
+// One row per email and program. Asking twice for the same entry does not add a second row.
+function saveAlert(data) {
+  var sh = tab(ALERT_SHEET, ALERT_HEADERS);
+  var email = clean(data.contact, 200).toLowerCase();
+  var id = clean(data.program_id, 120);
+  var last = sh.getLastRow();
+  if (last > 1) {
+    var rows = sh.getRange(2, 2, last - 1, 2).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0]).toLowerCase() === email && String(rows[i][1]) === id) return;
+    }
+  }
+  sh.appendRow([new Date(), email, id, clean(data.program_name, 200), clean(data.data_version, 20), 'active', '']);
 }
 
 // Plain text only: trims, limits length, and stops a message from being read as a spreadsheet formula.
@@ -78,6 +106,10 @@ function clean(value, max) {
   var s = String(value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   return s;
+}
+
+function isEmail(value) {
+  return typeof value === 'string' && value.length <= 200 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
 function isUrl(value) {

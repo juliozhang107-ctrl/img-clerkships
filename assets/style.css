@@ -319,3 +319,14 @@ a { text-decoration-color: var(--warm); text-decoration-thickness: 2px; }
 
 /* Titles in the accent colour */
 h1, main h2, .row h3 { color: var(--warm); }
+
+/* Email alerts for one entry */
+.alert { margin-top: 16px; }
+.alert .choice { min-height: 30px; font-size: 15px; padding: 2px 10px; }
+.alert-on { font-size: 14px; margin: 0; }
+@media (max-width: 600px) {
+  .alert .choice { min-height: 38px; padding: 4px 14px; }
+}
+@media (pointer: coarse) {
+  .alert .choice { min-height: 44px; padding: 4px 14px; }
+}

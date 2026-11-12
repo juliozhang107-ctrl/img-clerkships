@@ -3,6 +3,7 @@
 
   var ENDPOINT = (window.SITE_CONFIG && window.SITE_CONFIG.FEEDBACK_ENDPOINT) || "";
   var STORE_KEY = "clerkship-votes-v1";
+  var ALERT_KEY = "clerkship-alerts-v1";
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var LETTERS = "ABCDEFGHIJKLMNOP";
   var REPORT_FIELDS = [
@@ -18,6 +19,8 @@
 
   var data = { meta: {}, programs: [] };
   var votes = loadVotes();
+  var alerts = loadAlerts(); // program ids this reader asked email alerts for
+  var lastEmail = "";       // kept for this visit only, to fill in the next sign-up
   var flowOpen = false;
   var pending = {}; // program ids with a "Yes" answer on its way to the inbox
 
@@ -58,6 +61,12 @@
     votes[id] = { vote: kind, at: d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) }; // the reader's own date
     try { localStorage.setItem(STORE_KEY, JSON.stringify(votes)); } catch (e) { /* private mode: keep in memory only */ }
   }
+  function loadAlerts() {
+    try {
+      var v = JSON.parse(localStorage.getItem(ALERT_KEY));
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch (e) { return {}; }
+  }
   function hintEnter() {
     return el("span", { class: "hint" }, ["press ", el("strong", { text: "Enter ↵" })]);
   }
@@ -86,9 +95,9 @@
 
   // ---------- full-screen question flow (one question at a time) ----------
   // opts: { context, steps: [{ key, type: "multi"|"text"|"long"|"url"|"email", title, desc, required, choices, placeholder }],
-  //         onSubmit(values) -> Promise, doneTitle, doneText, onDone(), opener }
+  //         values (answers to start with), onSubmit(values) -> Promise, doneTitle, doneText, onDone(), opener }
   function openFlow(opts) {
-    var steps = opts.steps, values = {}, index = 0, finished = false, sending = false, closed = false, notified = false, current = null;
+    var steps = opts.steps, values = opts.values || {}, index = 0, finished = false, sending = false, closed = false, notified = false, current = null;
     var fill = el("div");
     var stage = el("div", { class: "flow-stage" });
     var trap = el("input", { name: "website", tabindex: "-1", autocomplete: "off" });
@@ -307,6 +316,46 @@
     });
   }
 
+  // ---------- email alerts for one entry ----------
+  function alertFlow(p, opener, onDone) {
+    openFlow({
+      context: p.name,
+      opener: opener,
+      values: { contact: lastEmail },
+      steps: [
+        { key: "contact", type: "email", required: true, title: "Your email", desc: "We will email you when this entry changes or applications open. It is free. Your email is used only for these alerts and is never published.", placeholder: "name@example.com" }
+      ],
+      onSubmit: function (v) {
+        return send({ type: "alert", program_id: p.id, program_name: p.name, contact: v.contact, website: v.website }).then(function (r) { lastEmail = v.contact; return r; });
+      },
+      doneTitle: "You are on the list.",
+      doneText: "We will email you when the entry for " + p.name + " changes or applications open.",
+      onDone: onDone
+    });
+  }
+  function alertBar(p) {
+    var box = el("div", { class: "alert" });
+    if (alerts[p.id]) {
+      box.appendChild(el("p", { class: "alert-on", role: "status", tabindex: "-1", text: "You will get an email when this entry changes or applications open." }));
+      return box;
+    }
+    var label = "Email me when this entry changes or applications open";
+    var btn = el("button", { type: "button", class: "choice", "aria-label": label + ": " + p.name, text: label });
+    btn.addEventListener("click", function () {
+      alertFlow(p, btn, function () {
+        alerts[p.id] = true;
+        try { localStorage.setItem(ALERT_KEY, JSON.stringify(alerts)); } catch (e) { /* private mode: keep in memory only */ }
+        var node = document.getElementById("p-" + p.id), old = node && node.querySelector(".alert");
+        if (!old) return;
+        var fresh = alertBar(p);
+        node.replaceChild(fresh, old);
+        fresh.firstChild.focus({ preventScroll: true });
+      });
+    });
+    box.appendChild(btn);
+    return box;
+  }
+
   // ---------- program row ----------
   function fact(label, value, cls, small) {
     var dd = el("dd", { class: cls || "", text: value });
@@ -344,6 +393,7 @@
       fact("Also on VSLO", p.vslo ? "Yes" : "No", "")
     ]));
     node.appendChild(voteBar(p));
+    node.appendChild(alertBar(p));
     return node;
   }
 
