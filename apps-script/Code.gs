@@ -6,6 +6,9 @@
  * of the Google Sheet this script is attached to.
  *
  * Setup (once): see README.md, section "Connect the feedback inbox".
+ *
+ * The line below limits this script to the one sheet it is attached to.
+ * @OnlyCurrentDoc
  */
 
 var SHEET_NAME = 'Feedback';
