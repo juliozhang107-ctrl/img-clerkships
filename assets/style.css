@@ -224,3 +224,38 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 @media (max-width: 600px) {
   .welcome { padding: 56px 0 40px; }
 }
+
+/* Fixes after the full test: readability, touch screens, keyboard, high-contrast mode */
+:root {
+  --muted: rgba(255, 255, 255, 0.92);
+  --accent-30: rgba(255, 255, 255, 0.6);
+  --accent-60: rgba(255, 255, 255, 0.85);
+}
+.filters input[type=search]::placeholder, .q-input::placeholder { color: rgba(255, 255, 255, 0.75); }
+.filters input[type=search]::-webkit-search-cancel-button { filter: brightness(0) invert(1); cursor: pointer; }
+.filters .field { gap: 6px; }
+.filters input[type=search]:focus { border-bottom: 3px solid #ffffff; }
+.filters select:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
+.chip input:checked + span::before { content: "\2713\00a0"; }
+[tabindex="-1"]:focus { outline: none; }
+@media (max-height: 700px) {
+  .flow-stage { padding-bottom: 72px; }
+}
+@media (max-width: 600px) {
+  .q-sub { display: none; }
+}
+@media (pointer: coarse) {
+  .vote .choices { gap: 12px; }
+  .vote .choice { min-height: 44px; min-width: 76px; padding: 4px 14px; }
+  .chip span { padding: 10px 12px; }
+  .ok { min-height: 44px; }
+  .official { padding: 10px 0; }
+  .flow-close { min-width: 44px; min-height: 44px; }
+  .flow-nav button { width: 44px; height: 44px; }
+}
+@media (forced-colors: active) {
+  body::before { display: none; }
+  .flow { background: Canvas; }
+  .chip span, .choice, .ok, .flow-nav button { border: 1px solid ButtonText; }
+  .chip input:checked + span, .choice[aria-pressed=true], .choice[aria-checked=true] { border-width: 3px; }
+}
