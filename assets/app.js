@@ -315,14 +315,14 @@
   }
   // status is "required", "not_required" (the official page says so) or "not_reported" (the page is silent)
   function reqFact(label, status, detail) {
-    if (status === "required") return fact(label, "Required", "", detail ? "TOEFL iBT minimum " + detail : null);
-    if (status === "not_required") return fact(label, "Not required", "");
+    if (status === "required") return fact(label, "Required", "req", detail ? "TOEFL iBT minimum " + detail : null);
+    if (status === "not_required") return fact(label, "Not required", "free");
     return fact(label, "Not reported", "na");
   }
   function moneyFact(label, v) {
     var m = money(v);
     if (m === null) return fact(label, "Not reported", "na");
-    return fact(label, v === 0 ? "None" : m, "");
+    return fact(label, v === 0 ? "None" : m, v === 0 ? "free" : "");
   }
 
   function row(p) {

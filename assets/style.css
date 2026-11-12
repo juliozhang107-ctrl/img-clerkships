@@ -286,3 +286,33 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
   .st { stroke: CanvasText; fill: Canvas; }
   .st.has { fill: Highlight; }
 }
+
+/* More contrast between elements: bold headings and values, one warm accent, coloured status dots */
+:root { --warm: #ffd866; --warm-hover: #ffe491; --fresh: #8ff0b8; --navy: #0a2a7a; }
+h1, main h2 { font-weight: 700; letter-spacing: -0.01em; }
+.row h3 { font-weight: 700; }
+.about h3, .q-title { font-weight: 600; }
+.intro strong, .lead strong, .fine strong, .legend strong, .count strong { font-weight: 700; color: #ffffff; }
+a { text-decoration-color: var(--warm); text-decoration-thickness: 2px; }
+.ok { background: var(--warm); color: var(--navy); }
+.ok:hover { background: var(--warm-hover); }
+.facts dd { font-weight: 700; }
+.facts dd small { font-weight: 400; }
+.facts dd.na { font-weight: 400; }
+.facts dd.req::before, .facts dd.free::before, .flag::before {
+  content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 0.06em; background: var(--warm);
+}
+.facts dd.free::before { background: var(--fresh); }
+.flag { font-weight: 700; }
+.note { font-weight: 600; }
+.chip input:checked + span, .choice[aria-pressed=true], .choice[aria-checked=true] {
+  background: var(--warm); color: var(--navy); font-weight: 700; box-shadow: none;
+}
+.chip:hover input:checked + span, .choice[aria-pressed=true]:hover, .choice[aria-checked=true]:hover { background: var(--warm-hover); }
+.choice[aria-checked=true] .key { background: var(--navy); border-color: var(--navy); color: #ffffff; }
+.flow-progress div { background: var(--warm); }
+.q-num { font-weight: 700; }
+.changes time { font-weight: 700; color: #ffffff; }
+@media (forced-colors: active) {
+  .facts dd.req::before, .facts dd.free::before, .flag::before { background: CanvasText; }
+}
