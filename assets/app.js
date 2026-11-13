@@ -330,46 +330,51 @@
     });
   }
 
-  // ---------- email alerts for the whole list (one sign-up, under "Suggest a program") ----------
+  // ---------- email alerts for the whole list: an email box under "Suggest a program" ----------
   var ALL = { id: "all", name: "All programs" };
-  function alertFlow(opener, onDone) {
-    openFlow({
-      context: "Email alerts",
-      opener: opener,
-      steps: [
-        { key: "contact", type: "email", required: true, title: "Your email", desc: "We will email you when a program on the list changes or applications open. It is free. Your email is used only for these alerts and is never published.", placeholder: "name@example.com" }
-      ],
-      onSubmit: function (v) {
-        return send({ type: "alert", program_id: ALL.id, program_name: ALL.name, contact: v.contact, website: v.website }).then(function (r) {
-          track("generate_lead", { lead_source: "email_alert", program_id: ALL.id }); // never the email
-          return r;
-        });
-      },
-      doneTitle: "You are on the list.",
-      doneText: "We will email you when a program on the list changes or applications open.",
-      onDone: onDone
-    });
-  }
   function paintAlert(focus) {
     var box = $("alert-all");
     if (!box) return; // an older copy of the page, still in the browser's cache, has no place for it
     box.textContent = "";
     if (alerts[ALL.id]) {
-      var on = el("p", { class: "alert-on", role: "status", tabindex: "-1", text: "You will get an email when a program changes or applications open." });
+      var on = el("p", { class: "alert-on", role: "status", tabindex: "-1", text: "You are on the list. We will email you when a program changes or applications open." });
       box.appendChild(on);
       if (focus) on.focus({ preventScroll: true });
       return;
     }
-    var btn = el("button", { type: "button", class: "choice", text: "Email me when a program changes or applications open" });
-    btn.addEventListener("click", function () {
-      track("alert_open", { program_id: ALL.id });
-      alertFlow(btn, function () {
+    var input = el("input", { type: "email", id: "alert-email", placeholder: "name@example.com", autocomplete: "email", maxlength: "200" });
+    var trap = el("input", { name: "website", tabindex: "-1", autocomplete: "off" });
+    var btn = el("button", { type: "submit", class: "ok", text: "Sign up" });
+    var msg = el("p", { class: "msg", role: "status", "aria-live": "polite" });
+    var form = el("form", { class: "alert-form", novalidate: "" }, [
+      el("label", { for: "alert-email", text: "Email me when a program changes or applications open" }),
+      el("div", { class: "alert-row" }, [input, btn]),
+      el("div", { class: "hp", "aria-hidden": "true" }, [trap]),
+      msg,
+      el("p", { class: "alert-fine", text: "Free. Your email is used only for these alerts and is never published." })
+    ]);
+    var sending = false;
+    function fail(text) { msg.className = "msg err"; msg.textContent = text; }
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      if (sending) return; // one press, one sign-up
+      var email = input.value.trim();
+      if (!email) { fail("Please type your email."); input.focus(); return; }
+      if (!/^\S+@\S+\.\S+$/.test(email)) { fail("That email does not look right."); input.focus(); return; }
+      sending = true; btn.disabled = true; msg.className = "msg"; msg.textContent = "Sending…";
+      send({ type: "alert", program_id: ALL.id, program_name: ALL.name, contact: email, website: trap.value }).then(function () {
+        track("generate_lead", { lead_source: "email_alert", program_id: ALL.id }); // never the email
         alerts[ALL.id] = true;
         try { localStorage.setItem(ALERT_KEY, JSON.stringify(alerts)); } catch (e) { /* private mode: keep in memory only */ }
         paintAlert(true);
+      }, function (err) {
+        sending = false; btn.disabled = false; fail(err.message);
       });
     });
-    box.appendChild(btn);
+    input.addEventListener("input", function () {
+      if (msg.className === "msg err") { msg.className = "msg"; msg.textContent = ""; }
+    });
+    box.appendChild(form);
   }
 
   // ---------- reader reviews of one entry ----------
