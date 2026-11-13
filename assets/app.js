@@ -352,6 +352,7 @@
   }
   function paintAlert(focus) {
     var box = $("alert-all");
+    if (!box) return; // an older copy of the page, still in the browser's cache, has no place for it
     box.textContent = "";
     if (alerts[ALL.id]) {
       var on = el("p", { class: "alert-on", role: "status", tabindex: "-1", text: "You will get an email when a program changes or applications open." });
@@ -782,7 +783,8 @@
     var change = el("button", { type: "button", text: "Change" });
     change.addEventListener("click", function () { statsBar(); $("stats-bar").querySelector("button").focus(); });
     $("foot-meta").parentNode.appendChild(el("p", { id: "foot-stats" }, [el("span"), change]));
-    $("privacy-stats").hidden = false;
+    var note = $("privacy-stats");
+    if (note) note.hidden = false;
     paintStatsLine();
     // a browser set to "do not track" is taken as a No, without asking
     var optedOut = navigator.globalPrivacyControl === true || navigator.doNotTrack === "1";
