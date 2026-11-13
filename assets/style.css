@@ -381,3 +381,6 @@ body.stats-open { padding-bottom: 120px; }
 @media (forced-colors: active) {
   .tags li { border: 1px solid CanvasText; }
 }
+
+/* Typeface: Avenir (built into Apple devices); other systems use their standard sans-serif */
+:root { --font: "Avenir Next", Avenir, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif; }
