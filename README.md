@@ -48,7 +48,7 @@ If you later edit `Code.gs`, use **Deploy → Manage deployments → Edit → Ne
 
 ## Publish with GitHub Pages
 
-Repository **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)`**. The page is then served at `https://<user>.github.io/<repository>/`.
+Repository **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)`**. The page is then served at `https://<user>.github.io/<repository>/`, or at your own domain if you set one under **Custom domain** on the same screen. This site uses `https://usclinicalelectives.com/` (the `CNAME` file holds that name). The address also appears in `index.html` (canonical link and share preview), `sitemap.xml` and `robots.txt`.
 
 ## Editing the list by hand
 
