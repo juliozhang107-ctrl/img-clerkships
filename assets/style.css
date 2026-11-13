@@ -384,3 +384,10 @@ body.stats-open { padding-bottom: 120px; }
 
 /* Typeface: Avenir (built into Apple devices); other systems use their standard sans-serif */
 :root { --font: "Avenir Next", Avenir, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+/* One email-alert sign-up, under "Suggest a program" */
+#alert-all { margin-top: 20px; }
+#alert-all .choice { font-size: 16px; min-height: 36px; padding: 4px 12px; }
+@media (pointer: coarse) {
+  #alert-all .choice { min-height: 44px; padding: 4px 14px; }
+}

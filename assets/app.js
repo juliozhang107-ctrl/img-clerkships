@@ -28,10 +28,9 @@
 
   var data = { meta: {}, programs: [] };
   var votes = loadVotes();
-  var alerts = loadSaved(ALERT_KEY);    // program ids this reader asked email alerts for
+  var alerts = loadSaved(ALERT_KEY);    // "all" is set once this reader asked for email alerts
   var reviewed = loadSaved(REVIEW_KEY); // program ids this reader sent a review for
   var reviews = {};                     // approved reader reviews, by program id
-  var lastEmail = "";       // kept for this visit only, to fill in the next sign-up
   var flowOpen = false;
   var pending = {}; // program ids with a "Yes" answer on its way to the inbox
 
@@ -331,49 +330,45 @@
     });
   }
 
-  // ---------- email alerts for one entry ----------
-  function alertFlow(p, opener, onDone) {
+  // ---------- email alerts for the whole list (one sign-up, under "Suggest a program") ----------
+  var ALL = { id: "all", name: "All programs" };
+  function alertFlow(opener, onDone) {
     openFlow({
-      context: p.name,
+      context: "Email alerts",
       opener: opener,
-      values: { contact: lastEmail },
       steps: [
-        { key: "contact", type: "email", required: true, title: "Your email", desc: "We will email you when this entry changes or applications open. It is free. Your email is used only for these alerts and is never published.", placeholder: "name@example.com" }
+        { key: "contact", type: "email", required: true, title: "Your email", desc: "We will email you when a program on the list changes or applications open. It is free. Your email is used only for these alerts and is never published.", placeholder: "name@example.com" }
       ],
       onSubmit: function (v) {
-        return send({ type: "alert", program_id: p.id, program_name: p.name, contact: v.contact, website: v.website }).then(function (r) {
-          lastEmail = v.contact;
-          track("generate_lead", { lead_source: "email_alert", program_id: p.id }); // the program only, never the email
+        return send({ type: "alert", program_id: ALL.id, program_name: ALL.name, contact: v.contact, website: v.website }).then(function (r) {
+          track("generate_lead", { lead_source: "email_alert", program_id: ALL.id }); // never the email
           return r;
         });
       },
       doneTitle: "You are on the list.",
-      doneText: "We will email you when the entry for " + p.name + " changes or applications open.",
+      doneText: "We will email you when a program on the list changes or applications open.",
       onDone: onDone
     });
   }
-  function alertBar(p) {
-    var box = el("div", { class: "alert" });
-    if (alerts[p.id]) {
-      box.appendChild(el("p", { class: "alert-on", role: "status", tabindex: "-1", text: "You will get an email when this entry changes or applications open." }));
-      return box;
+  function paintAlert(focus) {
+    var box = $("alert-all");
+    box.textContent = "";
+    if (alerts[ALL.id]) {
+      var on = el("p", { class: "alert-on", role: "status", tabindex: "-1", text: "You will get an email when a program changes or applications open." });
+      box.appendChild(on);
+      if (focus) on.focus({ preventScroll: true });
+      return;
     }
-    var label = "Email me when this entry changes or applications open";
-    var btn = el("button", { type: "button", class: "choice", "aria-label": label + ": " + p.name, text: label });
+    var btn = el("button", { type: "button", class: "choice", text: "Email me when a program changes or applications open" });
     btn.addEventListener("click", function () {
-      track("alert_open", { program_id: p.id });
-      alertFlow(p, btn, function () {
-        alerts[p.id] = true;
+      track("alert_open", { program_id: ALL.id });
+      alertFlow(btn, function () {
+        alerts[ALL.id] = true;
         try { localStorage.setItem(ALERT_KEY, JSON.stringify(alerts)); } catch (e) { /* private mode: keep in memory only */ }
-        var node = document.getElementById("p-" + p.id), old = node && node.querySelector(".alert");
-        if (!old) return;
-        var fresh = alertBar(p);
-        node.replaceChild(fresh, old);
-        fresh.firstChild.focus({ preventScroll: true });
+        paintAlert(true);
       });
     });
     box.appendChild(btn);
-    return box;
   }
 
   // ---------- reader reviews of one entry ----------
@@ -504,7 +499,6 @@
     ]));
     node.appendChild(reviewBar(p));
     node.appendChild(voteBar(p));
-    node.appendChild(alertBar(p));
     return node;
   }
 
@@ -842,6 +836,7 @@
 
   if (history.state && history.state.flow) history.replaceState(null, ""); // left over from a reload inside a flow
   setUpStats();
+  paintAlert(false);
 
   getJSON("data/programs.json").then(function (d) {
     data = d;
